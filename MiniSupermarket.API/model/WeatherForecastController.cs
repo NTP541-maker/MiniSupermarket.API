@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace MiniSupermarket.API.Controllers
+namespace MiniSupermarket.API.model
 {
     [ApiController]
     [Route("[controller]")]
