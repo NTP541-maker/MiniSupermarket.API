@@ -1,15 +1,19 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MiniSupermarket.API.Models;
+using Microsoft.AspNetCore.Authorization;
 
+// Bắt buộc phải có Token mới gọi được các API trong Controller này
 namespace MiniSupermarket.API.Controllers
 {
     [Route("api/[controller]")] // Định tuyến cơ sở: /api/categories
     [ApiController]
+    [Authorize]
     public class CategoriesController : ControllerBase
     {
 
         // Dữ liệu mẫu lưu tạm trên bộ nhớ RAM (In-Memory) phục vụ kiểm thử khi chưa có Database
-        private static readonly List<Category> _categories = new() {
+        private static readonly List<Category> _categories = new()
+        {
             new Category { CategoryId = 1, CategoryName = "Bánh kẹo & Đồ ăn vặt", Description = "Snack, bánh quy, kẹo dẻo" },
             new Category { CategoryId = 2, CategoryName = "Nước giải khát & Trà", Description = "Nước ngọt, nước khoáng, trà" },
             new Category { CategoryId = 3, CategoryName = "Sữa & Sản phẩm từ sữa", Description = "Sữa tươi, sữa chua, phô mai" },
@@ -46,10 +50,12 @@ namespace MiniSupermarket.API.Controllers
             {
                 return BadRequest(new { message = "Vui lòng nhập từ khóa!" });
             }
+
             // Lọc danh sách theo tên chứa từ khóa (không phân biệt chữ hoa/thường)
             var result = _categories
                 .Where(c => c.CategoryName.Contains(keyword, StringComparison.OrdinalIgnoreCase))
                 .ToList();
+
             return Ok(result);
         }
 
@@ -61,6 +67,7 @@ namespace MiniSupermarket.API.Controllers
             {
                 return BadRequest(new { message = "Tên không được trống!" });
             }
+
             // Tự động tăng ID tiếp theo
             newCat.CategoryId = _categories.Count > 0 ? _categories.Max(c => c.CategoryId) + 1 : 1;
             _categories.Add(newCat);
@@ -78,6 +85,7 @@ namespace MiniSupermarket.API.Controllers
             {
                 return NotFound(new { message = "Không tìm thấy nhóm hàng cần sửa!" });
             }
+
             // Cập nhật giá trị mới
             cat.CategoryName = updateCat.CategoryName;
             cat.Description = updateCat.Description;
@@ -91,12 +99,48 @@ namespace MiniSupermarket.API.Controllers
         public IActionResult Delete(int id)
         {
             var cat = _categories.FirstOrDefault(c => c.CategoryId == id);
+
             if (cat == null)
             {
                 return NotFound(new { message = "Không tìm thấy nhóm hàng cần xóa!" });
             }
+
             _categories.Remove(cat);
+
             return NoContent();
         }
+
+
+        // =====================================================
+        // 7. KIỂM TRA QUYỀN ADMIN
+        // GET /api/categories/admin-dashboard
+        // Chỉ tài khoản có Role = Admin mới được gọi
+        // =====================================================
+        [HttpGet("admin-dashboard")]
+        [Authorize(Roles = "Admin")]
+        public IActionResult GetAdminDashboard()
+        {
+            return Ok(new
+            {
+                message = "Chào mừng Admin! Bạn có toàn quyền quản trị hệ thống siêu thị mini."
+            });
+        }
+
+
+        // =====================================================
+        // 8. KIỂM TRA QUYỀN NHÂN VIÊN
+        // GET /api/categories/staff-pos
+        // Cả Admin và Cashier đều được gọi
+        // =====================================================
+        [HttpGet("staff-pos")]
+        [Authorize(Roles = "Admin,Cashier")]
+        public IActionResult GetStaffPos()
+        {
+            return Ok(new
+            {
+                message = "Màn hình POS Thu ngân sẵn sàng phục vụ bán hàng."
+            });
+        }
+
     }
 }
