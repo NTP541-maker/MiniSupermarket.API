@@ -17,6 +17,29 @@ namespace MiniSupermarket.WinForms
 
 
         // =====================================================
+        // PHÂN QUYỀN
+        // =====================================================
+
+        private bool IsAdmin()
+        {
+            return string.Equals(
+                SessionManager.CurrentRole,
+                "Admin",
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void KiemTraQuyen()
+        {
+            bool isAdmin = IsAdmin();
+
+            // Admin được thêm, sửa, xóa
+            btnAdd.Enabled = isAdmin;
+            btnUpdate.Enabled = isAdmin;
+            btnDelete.Enabled = isAdmin;
+        }
+
+
+        // =====================================================
         // CONSTRUCTOR
         // =====================================================
 
@@ -46,6 +69,9 @@ namespace MiniSupermarket.WinForms
 
             lblStatus.Text =
                 "Ready";
+
+            // ===== PHÂN QUYỀN =====
+            KiemTraQuyen();
         }
 
 
@@ -325,6 +351,18 @@ namespace MiniSupermarket.WinForms
             object sender,
             EventArgs e)
         {
+            // ===== PHÂN QUYỀN =====
+            if (!IsAdmin())
+            {
+                MessageBox.Show(
+                    "Bạn không có quyền thêm nhóm hàng!",
+                    "Không có quyền",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(
                 txtName.Text))
             {
@@ -387,6 +425,18 @@ namespace MiniSupermarket.WinForms
             object sender,
             EventArgs e)
         {
+            // ===== PHÂN QUYỀN =====
+            if (!IsAdmin())
+            {
+                MessageBox.Show(
+                    "Bạn không có quyền cập nhật nhóm hàng!",
+                    "Không có quyền",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+
+                return;
+            }
+
             int id;
 
             if (!int.TryParse(
@@ -464,6 +514,18 @@ namespace MiniSupermarket.WinForms
             object sender,
             EventArgs e)
         {
+            // ===== PHÂN QUYỀN =====
+            if (!IsAdmin())
+            {
+                MessageBox.Show(
+                    "Bạn không có quyền xóa nhóm hàng!",
+                    "Không có quyền",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+
+                return;
+            }
+
             int id;
 
             if (!int.TryParse(
