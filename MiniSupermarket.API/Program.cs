@@ -2,12 +2,21 @@
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
+using MiniSupermarket.API.Data;
+
+// Lấy chuỗi kết nối từ appsettings.json
+
+
 
 var builder = WebApplication.CreateBuilder(args);
-
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 // Cấu hình dịch vụ xác thực JWT Bearer
 var jwtSecret = builder.Configuration["JwtSettings:Secret"]
     ?? "SupermarketSecretKeyDoAnMonHoc2026SecureString!!";
+
+builder.Services.AddDbContext<SupermarketDbContext>(options =>
+    options.UseSqlServer(connectionString));
 
 builder.Services.AddAuthentication(options =>
 {
@@ -67,7 +76,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(); 
 }
 
 app.UseHttpsRedirection();

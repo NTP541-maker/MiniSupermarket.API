@@ -1,7 +1,10 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Net.Http;          // THÊM
+using System.Net.Http.Json;     // THÊM
 using System.Windows.Forms;
 
 namespace MiniSupermarket.WinForms
@@ -14,6 +17,18 @@ namespace MiniSupermarket.WinForms
 
         private List<Category> categories =
             new List<Category>();
+
+
+        // =====================================================
+        // KẾT NỐI API
+        // =====================================================
+
+        private HttpClient client =
+            new HttpClient
+            {
+                BaseAddress =
+                    new Uri("https://localhost:7123/api/")
+            };
 
 
         // =====================================================
@@ -53,11 +68,11 @@ namespace MiniSupermarket.WinForms
         // FORM LOAD
         // =====================================================
 
-        private void FormCategoryManagement_Load_1(
+        private async void FormCategoryManagement_Load_1(
             object sender,
             EventArgs e)
         {
-            LoadData();
+            await LoadData();
 
             SelectFirstRow();
 
@@ -76,59 +91,43 @@ namespace MiniSupermarket.WinForms
 
 
         // =====================================================
-        // DỮ LIỆU MẪU
+        // LẤY DỮ LIỆU TỪ API
         // =====================================================
 
-        private void LoadData()
+        private async System.Threading.Tasks.Task LoadData()
         {
-            categories.Clear();
+            try
+            {
+                List<Category> data =
+                    await client.GetFromJsonAsync<List<Category>>(
+                        "categories");
 
-            categories.Add(
-                new Category
+                if (data == null)
                 {
-                    ID = 1,
-                    Name = "Bánh kẹo & đồ ăn vặt",
-                    Description =
-                        "Các loại snack, bánh quy, kẹo dẻo, sô-cô-la..."
-                });
-
-            categories.Add(
-                new Category
+                    categories =
+                        new List<Category>();
+                }
+                else
                 {
-                    ID = 2,
-                    Name = "Nước giải khát & Trà",
-                    Description =
-                        "Nước ngọt, nước khoáng..."
-                });
+                    categories = data;
+                }
 
-            categories.Add(
-                new Category
-                {
-                    ID = 3,
-                    Name = "Sữa & Sản phẩm từ sữa",
-                    Description =
-                        "Sữa tươi, sữa chua..."
-                });
+                DisplayCategories(categories);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Không thể kết nối đến API!\n\n"
+                    + ex.Message,
+                    "Lỗi",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
 
-            categories.Add(
-                new Category
-                {
-                    ID = 4,
-                    Name = "Mì gói & Thực phẩm ăn liền",
-                    Description =
-                        "Mì ăn liền, phở khô..."
-                });
+                categories =
+                    new List<Category>();
 
-            categories.Add(
-                new Category
-                {
-                    ID = 5,
-                    Name = "Gia vị & Dầu ăn",
-                    Description =
-                        "Nước mắm, hạt nêm..."
-                });
-
-            DisplayCategories(categories);
+                DisplayCategories(categories);
+            }
         }
 
 
@@ -324,7 +323,7 @@ namespace MiniSupermarket.WinForms
         // TẢI LẠI
         // =====================================================
 
-        private void btnReload_Click(
+        private async void btnReload_Click(
             object sender,
             EventArgs e)
         {
@@ -334,7 +333,7 @@ namespace MiniSupermarket.WinForms
             txtSearch.ForeColor =
                 Color.Gray;
 
-            DisplayCategories(categories);
+            await LoadData();
 
             SelectFirstRow();
 
@@ -347,7 +346,7 @@ namespace MiniSupermarket.WinForms
         // THÊM MỚI
         // =====================================================
 
-        private void btnAdd_Click(
+        private async void btnAdd_Click(
             object sender,
             EventArgs e)
         {
@@ -378,20 +377,15 @@ namespace MiniSupermarket.WinForms
                 return;
             }
 
-            int newID = 1;
 
-            if (categories.Count > 0)
-            {
-                newID =
-                    categories.Max(
-                        x => x.ID) + 1;
-            }
+            // =================================================
+            // SỬA: KHÔNG TỰ TẠO ID NỮA
+            // SQL SERVER SẼ TỰ TĂNG ID
+            // =================================================
 
             Category category =
                 new Category
                 {
-                    ID = newID,
-
                     Name =
                         txtName.Text.Trim(),
 
@@ -399,21 +393,50 @@ namespace MiniSupermarket.WinForms
                         txtDescription.Text.Trim()
                 };
 
-            categories.Add(category);
 
-            DisplayCategories(categories);
+            try
+            {
+                HttpResponseMessage response =
+                    await client.PostAsJsonAsync(
+                        "categories",
+                        category);
 
-            SelectCategoryByID(newID);
 
-            lblStatus.Text =
-                "Đã thêm nhóm hàng";
+                if (response.IsSuccessStatusCode)
+                {
+                    MessageBox.Show(
+                        "Thêm mới thành công!",
+                        "Thông báo",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information
+                    );
 
-            MessageBox.Show(
-                "Thêm mới thành công!",
-                "Thông báo",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information
-            );
+                    await LoadData();
+
+                    SelectFirstRow();
+
+                    lblStatus.Text =
+                        "Đã thêm nhóm hàng";
+                }
+                else
+                {
+                    MessageBox.Show(
+                        "Thêm nhóm hàng thất bại!\n"
+                        + response.StatusCode,
+                        "Lỗi",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Không thể kết nối API!\n\n"
+                    + ex.Message,
+                    "Lỗi",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
         }
 
 
@@ -421,7 +444,7 @@ namespace MiniSupermarket.WinForms
         // CẬP NHẬT
         // =====================================================
 
-        private void btnUpdate_Click(
+        private async void btnUpdate_Click(
             object sender,
             EventArgs e)
         {
@@ -453,21 +476,6 @@ namespace MiniSupermarket.WinForms
                 return;
             }
 
-            Category category =
-                categories.FirstOrDefault(
-                    x => x.ID == id);
-
-            if (category == null)
-            {
-                MessageBox.Show(
-                    "Không tìm thấy nhóm hàng!",
-                    "Thông báo",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning
-                );
-
-                return;
-            }
 
             if (string.IsNullOrWhiteSpace(
                 txtName.Text))
@@ -484,25 +492,67 @@ namespace MiniSupermarket.WinForms
                 return;
             }
 
-            category.Name =
-                txtName.Text.Trim();
 
-            category.Description =
-                txtDescription.Text.Trim();
+            // =================================================
+            // TẠO ĐỐI TƯỢNG CẦN CẬP NHẬT
+            // =================================================
 
-            DisplayCategories(categories);
+            Category category =
+                new Category
+                {
+                    ID = id,
 
-            SelectCategoryByID(id);
+                    Name =
+                        txtName.Text.Trim(),
 
-            lblStatus.Text =
-                "Đã cập nhật nhóm hàng";
+                    Description =
+                        txtDescription.Text.Trim()
+                };
 
-            MessageBox.Show(
-                "Cập nhật thành công!",
-                "Thông báo",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information
-            );
+
+            try
+            {
+                HttpResponseMessage response =
+                    await client.PutAsJsonAsync(
+                        "categories/" + id,
+                        category);
+
+
+                if (response.IsSuccessStatusCode)
+                {
+                    MessageBox.Show(
+                        "Cập nhật thành công!",
+                        "Thông báo",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information
+                    );
+
+                    await LoadData();
+
+                    SelectCategoryByID(id);
+
+                    lblStatus.Text =
+                        "Đã cập nhật nhóm hàng";
+                }
+                else
+                {
+                    MessageBox.Show(
+                        "Cập nhật thất bại!\n"
+                        + response.StatusCode,
+                        "Lỗi",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Không thể kết nối API!\n\n"
+                    + ex.Message,
+                    "Lỗi",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
         }
 
 
@@ -510,7 +560,7 @@ namespace MiniSupermarket.WinForms
         // XÓA
         // =====================================================
 
-        private void btnDelete_Click(
+        private async void btnDelete_Click(
             object sender,
             EventArgs e)
         {
@@ -567,21 +617,52 @@ namespace MiniSupermarket.WinForms
             if (result ==
                 DialogResult.Yes)
             {
-                categories.Remove(category);
+                try
+                {
+                    // =================================================
+                    // SỬA: XÓA TRÊN SQL SERVER THÔNG QUA API
+                    // =================================================
 
-                DisplayCategories(categories);
+                    HttpResponseMessage response =
+                        await client.DeleteAsync(
+                            "categories/" + id);
 
-                SelectFirstRow();
 
-                lblStatus.Text =
-                    "Đã xóa nhóm hàng";
+                    if (response.IsSuccessStatusCode)
+                    {
+                        MessageBox.Show(
+                            "Xóa thành công!",
+                            "Thông báo",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information
+                        );
 
-                MessageBox.Show(
-                    "Xóa thành công!",
-                    "Thông báo",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information
-                );
+                        await LoadData();
+
+                        SelectFirstRow();
+
+                        lblStatus.Text =
+                            "Đã xóa nhóm hàng";
+                    }
+                    else
+                    {
+                        MessageBox.Show(
+                            "Xóa thất bại!\n"
+                            + response.StatusCode,
+                            "Lỗi",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        "Không thể kết nối API!\n\n"
+                        + ex.Message,
+                        "Lỗi",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
             }
         }
 
