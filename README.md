@@ -1,8 +1,13 @@
 🛒 HỆ THỐNG QUẢN LÝ SIÊU THỊ MINI --- README BUỔI 3
+
 Môn học: Lập trình Ứng dụng .NET Core (229162)
+
 Sinh viên: Nguyễn Thiên Phước
+
 MSSV: 2124110282
+
 Lớp học phần: CCQ2411C
+
 
 1. Mục tiêu thực hành
 Chuyển dữ liệu từ bộ nhớ tạm In-Memory sang SQL Server để dữ liệu được lưu lâu dài.
