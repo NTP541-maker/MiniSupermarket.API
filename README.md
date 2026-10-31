@@ -1,104 +1,187 @@
-# Giải pháp phần mềm bán lẻ và kiểm soát hàng tồn kho tự động
+# Phát triển Giải pháp Phần mềm Bán lẻ và Kiểm soát Hàng tồn kho tự động
 
 ## Cửa hàng Đồ dùng Tiện ích Nhật Daiso Mini
 
-## Thông tin sinh viên
+Ứng dụng quản lý hoạt động bán lẻ cho cửa hàng tiện ích Daiso Mini, gồm API viết bằng ASP.NET Core, cơ sở dữ liệu SQL Server và ứng dụng quản lý trên WinForms. Hệ thống hỗ trợ quản lý sản phẩm, bán hàng tại quầy, theo dõi hóa đơn, khách hàng, tồn kho và báo cáo doanh thu.
 
-- Họ tên: Nguyen Thien Phuoc
-- MSSV: 2124110282
-- Lớp: CCQ2411C
+> Đây là dự án học tập mô phỏng hoạt động cửa hàng; không phải sản phẩm chính thức hay có liên kết với thương hiệu Daiso.
 
-## Giới thiệu
+## Mục lục
 
-Dự án xây dựng phần mềm hỗ trợ hoạt động bán lẻ tại cửa hàng đồ dùng tiện ích Nhật Daiso Mini. Hệ thống gồm API quản lý dữ liệu và ứng dụng desktop Windows Forms dành cho nhân viên cửa hàng.
+- [Tính năng](#tính-năng)
+- [Công nghệ sử dụng](#công-nghệ-sử-dụng)
+- [Kiến trúc dự án](#kiến-trúc-dự-án)
+- [Yêu cầu hệ thống](#yêu-cầu-hệ-thống)
+- [Cài đặt và chạy](#cài-đặt-và-chạy)
+- [Một số API chính](#một-số-api-chính)
+- [Phân quyền](#phân-quyền)
+- [Luồng demo](#luồng-demo)
+- [Tác giả](#tác-giả)
 
-Các nghiệp vụ chính gồm quản lý sản phẩm và danh mục, tra cứu hàng hóa, bán hàng tại quầy (POS), quản lý khách hàng, tự động cập nhật số lượng tồn sau thanh toán, cảnh báo mặt hàng đạt ngưỡng tồn kho tối thiểu và xem báo cáo doanh thu theo thu ngân.
+## Tính năng
 
-## Chức năng
+### Bán hàng tại quầy (POS)
 
-- **Sản phẩm và danh mục:** thêm, xem, cập nhật, xóa và tìm kiếm sản phẩm/danh mục; tra cứu sản phẩm theo mã vạch.
-- **Kiểm soát tồn kho:** lưu số lượng tồn và ngưỡng tồn tối thiểu của từng sản phẩm; cung cấp danh sách sản phẩm sắp hết hàng khi số lượng tồn nhỏ hơn hoặc bằng ngưỡng.
-- **Bán hàng POS:** tạo hóa đơn từ giỏ hàng; kiểm tra sản phẩm và tồn kho; ghi nhận hóa đơn, chi tiết hóa đơn và trừ tồn kho trong một giao dịch cơ sở dữ liệu.
-- **Khách hàng:** quản lý, tìm kiếm khách hàng và điểm thưởng; cộng điểm thưởng khi thanh toán.
-- **Đăng nhập và phân quyền:** xác thực bằng JWT; giới hạn một số nghiệp vụ theo vai trò, chẳng hạn thanh toán cho Admin/Cashier và báo cáo doanh thu cho Admin.
-- **Báo cáo:** tổng hợp số hóa đơn, doanh thu và điểm thưởng theo thu ngân.
-- **Ứng dụng desktop:** giao diện WinForms gồm các màn hình đăng nhập, POS, sản phẩm, danh mục, khách hàng, vai trò và phân tích.
+- Tìm sản phẩm bằng mã vạch; thêm sản phẩm vào giỏ hàng và cộng dồn số lượng khi quét trùng.
+- Tính tổng tiền, điểm thưởng và tiền thối lại.
+- Thanh toán đơn hàng thông qua API; kiểm tra tồn kho và thông tin khách hàng ở phía máy chủ.
+- Hỗ trợ đổi điểm thưởng để giảm số tiền thanh toán.
+- Ghi nhận hóa đơn, chi tiết hóa đơn, số lượng tồn kho và điểm khách hàng trong quy trình giao dịch.
 
-## Công nghệ
+### Sản phẩm và tồn kho
 
-- C# và .NET 8
-- ASP.NET Core Web API
-- Windows Forms (WinForms)
-- Entity Framework Core 8 và SQL Server
-- ADO.NET cho một số thao tác POS, tra cứu và báo cáo
-- JWT Bearer Authentication
-- Swagger / OpenAPI
+- Xem, tìm kiếm và lọc danh mục sản phẩm.
+- Nhân viên thu ngân được xem danh sách sản phẩm ở chế độ chỉ đọc; giá nhập không được trả về cho vai trò này.
+- Người có quyền quản trị được thêm, cập nhật và xóa sản phẩm.
+- Làm nổi bật mặt hàng sắp hết khi tồn kho không quá 10.
+- Hỗ trợ xuất danh sách sản phẩm ra CSV.
 
-## Cấu trúc dự án
+### Hóa đơn và khách hàng
+
+- Xem danh sách hóa đơn và chi tiết từng hóa đơn.
+- Thu ngân chỉ xem hóa đơn do tài khoản của mình lập; người quản lý có quyền phù hợp có thể xem toàn bộ.
+- Quản lý thông tin khách hàng và điểm thưởng theo quyền được cấp.
+
+### Dashboard và báo cáo
+
+- Dashboard gồm doanh thu trong ngày, số hóa đơn, khách hàng mới và số mặt hàng sắp hết.
+- Báo cáo doanh thu theo khoảng ngày và theo thu ngân.
+- Thống kê sản phẩm bán chạy.
+- Xuất dữ liệu hóa đơn theo khoảng thời gian.
+
+### Đăng nhập và giao diện
+
+- Đăng nhập API và xác thực bằng JWT.
+- `ApiClientService` dùng chung để gọi API và tự đính kèm Bearer Token.
+- Giao diện WinForms có menu điều hướng bên trái, tiêu đề phía trên và nhúng màn hình con trong vùng làm việc trung tâm.
+- Các nút chức năng được hiển thị theo vai trò đăng nhập.
+
+## Công nghệ sử dụng
+
+- **Backend:** ASP.NET Core Web API, .NET 8
+- **Desktop client:** Windows Forms, .NET 8
+- **Cơ sở dữ liệu:** Microsoft SQL Server
+- **ORM:** Entity Framework Core
+- **Xác thực:** JWT Bearer
+- **Truy vấn dữ liệu:** Entity Framework Core LINQ và ADO.NET ở một số nghiệp vụ
+- **Giao tiếp:** REST API, JSON, `HttpClient`
+
+## Kiến trúc dự án
 
 ```text
 .
-├── Controllers/                 # API đăng nhập, sản phẩm, danh mục, khách hàng, POS, báo cáo
-├── Data/                        # SupermarketDbContext và cấu hình dữ liệu
-├── Migrations/                  # Migration cơ sở dữ liệu Entity Framework Core
-├── Models/                      # Các mô hình sản phẩm, khách hàng, hóa đơn và dữ liệu liên quan
-├── MiniSupermarket.WinForms/    # Ứng dụng desktop Windows Forms
-├── MiniSupermarket.API.csproj   # Dự án Web API
-└── MiniSupermarket.API.sln      # Solution gồm API và WinForms
+├── Controllers/                 # API đăng nhập, sản phẩm, đơn hàng, báo cáo...
+├── Data/                        # DbContext và cấu hình dữ liệu
+├── Migrations/                  # Migration của Entity Framework Core
+├── Models/                      # Entity và DTO
+├── MiniSupermarket.WinForms/    # Ứng dụng desktop WinForms
+├── Properties/                  # Cấu hình chạy API
+├── MiniSupermarket.API.csproj
+└── README.md
 ```
+
+## Yêu cầu hệ thống
+
+- Windows
+- .NET 8 SDK
+- SQL Server hoặc SQL Server Express
+- Visual Studio 2022 hoặc .NET CLI
+
+## Cài đặt và chạy
+
+### 1. Lấy mã nguồn
+
+```bash
+git clone <URL_REPOSITORY_CUA_BAN>
+cd <TEN_THU_MUC_DU_AN>
+```
+
+### 2. Cấu hình SQL Server và JWT
+
+API cần có các cấu hình `ConnectionStrings:DefaultConnection`, `JwtSettings:Secret` và `Cors:AllowedOrigins`. Không đưa mật khẩu hoặc JWT secret thật lên GitHub. Có thể đặt cấu hình cục bộ bằng User Secrets từ thư mục chứa `MiniSupermarket.API.csproj`:
+
+```powershell
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=.\SQLEXPRESS;Database=MiniSupermarket;Trusted_Connection=True;TrustServerCertificate=True;"
+dotnet user-secrets set "JwtSettings:Secret" "<CHUOI_BI_MAT_DAI_VA_NGAU_NHIEN>"
+```
+
+Nếu dùng máy chủ hoặc database khác, hãy thay giá trị chuỗi kết nối cho phù hợp. Cấu hình `Cors:AllowedOrigins` trong `appsettings.json` nếu API được gọi từ một ứng dụng web ở origin khác.
+
+### 3. Chạy API
+
+```powershell
+dotnet run --project .\MiniSupermarket.API.csproj --launch-profile https
+```
+
+API chạy theo profile HTTPS đã cấu hình trong `Properties/launchSettings.json`; Swagger được bật trong môi trường Development. Khi khởi động, ứng dụng thử áp dụng các migration và chuẩn bị dữ liệu mẫu. SQL Server cần chạy và có thể truy cập được.
+
+### 4. Chạy ứng dụng WinForms
+
+Mở terminal thứ hai tại thư mục gốc:
+
+```powershell
+dotnet run --project .\MiniSupermarket.WinForms\MiniSupermarket.WinForms.csproj
+```
+
+WinForms gọi các địa chỉ API được khai báo trong `MiniSupermarket.WinForms/ApiClientService.cs`. Nếu thay đổi cổng hoặc giao thức của API, cập nhật danh sách địa chỉ tại file này cho phù hợp.
 
 ## Một số API chính
 
-Các API nghiệp vụ yêu cầu JWT, trừ endpoint đăng nhập.
+Các endpoint được bảo vệ yêu cầu JWT trong header:
+
+```http
+Authorization: Bearer <JWT_TOKEN>
+```
 
 | Phương thức | Endpoint | Mô tả |
 |---|---|---|
 | `POST` | `/api/auth/login` | Đăng nhập và nhận JWT |
-| `GET` | `/api/products` | Lấy danh sách sản phẩm |
-| `GET` | `/api/products/low-stock` | Lấy sản phẩm chạm ngưỡng tồn tối thiểu |
-| `GET` | `/api/products/search?keyword={tu_khoa}` | Tìm sản phẩm theo tên, mã vạch hoặc danh mục |
-| `GET` | `/api/products/barcode/{barcode}` | Tra cứu theo mã vạch |
-| `GET` | `/api/categories` | Lấy danh sách danh mục |
-| `GET` | `/api/customers` | Lấy danh sách khách hàng |
-| `POST` | `/api/checkout` | Thanh toán giỏ hàng POS và cập nhật tồn kho |
-| `GET` | `/api/reports/revenue-by-cashier` | Báo cáo doanh thu theo thu ngân |
+| `GET` | `/api/products` | Danh sách sản phẩm |
+| `GET` | `/api/products/paged` | Danh sách sản phẩm có phân trang và tìm kiếm |
+| `GET` | `/api/products/barcode/{barcode}` | Tra cứu sản phẩm theo mã vạch |
+| `POST` | `/api/orders/checkout` | Thanh toán và tạo hóa đơn |
+| `GET` | `/api/orders` | Lịch sử hóa đơn theo quyền người dùng |
+| `GET` | `/api/reports/dashboard-summary` | Số liệu tổng quan dashboard |
+| `GET` | `/api/reports/sales-by-day` | Doanh thu theo ngày |
+| `GET` | `/api/reports/top-products` | Danh sách sản phẩm bán chạy |
+| `GET` | `/api/reports/orders-export` | Dữ liệu hóa đơn phục vụ xuất báo cáo |
 
-Mở Swagger trong môi trường Development để xem chi tiết request/response và các endpoint hiện có.
+Ví dụ truy vấn danh sách sản phẩm phân trang:
 
-## Yêu cầu môi trường
+```http
+GET /api/products/paged?keyword=Coca&pageNumber=1&pageSize=10
+```
 
-- Windows và Visual Studio 2022 hoặc .NET 8 SDK.
-- SQL Server.
-- Cấu hình chuỗi kết nối tới SQL Server có quyền tạo/cập nhật cơ sở dữ liệu.
+## Phân quyền
 
-## Cài đặt và chạy
+- **Admin / Manager / Supervisor:** truy cập các màn hình quản trị và báo cáo theo quyền được cấp.
+- **Cashier:** sử dụng POS, xem sản phẩm ở chế độ chỉ đọc và xem hóa đơn do chính mình lập.
+- API kiểm tra quyền ở phía máy chủ; ẩn nút trên giao diện không thay thế cho xác thực và phân quyền API.
 
-1. Clone repository và mở `MiniSupermarket.API.sln` bằng Visual Studio, hoặc mở terminal tại thư mục chứa solution.
-2. Cấu hình chuỗi kết nối cho API. Không sử dụng chuỗi kết nối máy phát triển đang có trong `appsettings.json`; hãy thay bằng cấu hình SQL Server của bạn. Có thể đặt bằng User Secrets:
+## Luồng demo
 
-   ```powershell
-   dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=TEN_MAY_CHU;Database=TiemTapHoaDaisoMini;Trusted_Connection=True;TrustServerCertificate=True;" --project MiniSupermarket.API.csproj
-   dotnet user-secrets set "JwtSettings:Secret" "THAY_BANG_CHUOI_BI_MAT_DAI_VA_NGAU_NHIEN" --project MiniSupermarket.API.csproj
-   ```
+1. Cấu hình SQL Server và JWT, sau đó chạy API.
+2. Chạy WinForms và đăng nhập bằng tài khoản đã được tạo trong cơ sở dữ liệu.
+3. Với tài khoản quản lý, xem danh mục sản phẩm, dashboard và báo cáo.
+4. Đăng xuất rồi đăng nhập bằng tài khoản thu ngân; xác nhận chỉ hiển thị các chức năng POS, xem sản phẩm và đơn hàng được cấp.
+5. Tạo một đơn hàng thử tại POS, kiểm tra hóa đơn, tồn kho và điểm khách hàng.
+6. Mở lịch sử hóa đơn để xem hóa đơn và các dòng sản phẩm.
 
-3. Chạy API:
+## Tác giả
 
-   ```powershell
-   dotnet run --project MiniSupermarket.API.csproj
-   ```
+- **Sinh viên:** Nguyen Thien Phuoc
+- **Mã sinh viên:** 2124110282
+- **Lớp:** CCQ2411C
+- **Môn học:** Lap Trinh Ung Dung
 
-   Khi khởi động, API áp dụng các migration hiện có vào cơ sở dữ liệu. Swagger được bật trong môi trường Development; địa chỉ cụ thể được hiển thị trong output của ứng dụng.
+## Giới thiệu ngắn để đăng GitHub
 
-4. Chạy ứng dụng WinForms trên Windows, bằng Visual Studio hoặc:
+Bạn có thể sao chép phần dưới đây vào phần **About** của repository hoặc dùng làm mô tả khi giới thiệu dự án:
 
-   ```powershell
-   dotnet run --project MiniSupermarket.WinForms/MiniSupermarket.WinForms.csproj
-   ```
+> **Phát triển Giải pháp Phần mềm Bán lẻ và Kiểm soát Hàng tồn kho tự động cho Cửa hàng Đồ dùng Tiện ích Nhật Daiso Mini.** Dự án xây dựng hệ thống quản lý bán lẻ gồm ASP.NET Core Web API, ứng dụng WinForms và SQL Server. Các chức năng chính bao gồm đăng nhập JWT, phân quyền người dùng, quản lý sản phẩm và tồn kho, bán hàng POS, quản lý hóa đơn và khách hàng, tích điểm/đổi điểm, dashboard KPI và báo cáo doanh thu.
 
-   WinForms hiện cấu hình địa chỉ API mặc định là `https://localhost:7035/api/` trong `MiniSupermarket.WinForms/ApiClientService.cs`. Nếu API chạy ở địa chỉ khác, cập nhật địa chỉ này để ứng dụng desktop kết nối đúng API.
+**Mô tả ngắn (GitHub repository description):**
 
-## Dữ liệu mẫu và lưu ý
-
-- Cấu hình dữ liệu có các danh mục và sản phẩm mẫu theo nhóm hàng tiện ích như nhà bếp, vệ sinh, chăm sóc cá nhân, lưu trữ, văn phòng, trang trí và mẹ & bé.
-- Chức năng đăng nhập hiện phục vụ mục đích demo và sử dụng tài khoản mẫu được khai báo trong mã nguồn. Cần thay thế cơ chế/tài khoản demo, cấu hình JWT và chứng chỉ phù hợp trước khi triển khai thực tế.
-- Ngưỡng tồn kho thấp được lưu theo từng sản phẩm. Việc bán hàng tự động trừ kho khi thanh toán thành công; dự án hiện tập trung vào nghiệp vụ bán hàng và theo dõi tồn kho theo các chức năng được triển khai.
+```text
+Ứng dụng quản lý bán lẻ Daiso Mini với ASP.NET Core Web API, WinForms, SQL Server, POS, quản lý tồn kho, hóa đơn và báo cáo doanh thu.
+```
