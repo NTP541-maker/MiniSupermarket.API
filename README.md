@@ -1,9 +1,9 @@
 # 🛒 DỰ ÁN HỆ THỐNG QUẢN LÝ SIÊU THỊ MINI (MINISUPERMARKET SYSTEM)
 
 ## 👤 THÔNG TIN SINH VIÊN BÁO CÁO
-* **Họ và tên:** Tạ Văn Thắng
-* **Mã sinh viên:** 2124110256
-* **Lớp học phần:** CCQ2411D
+* **Họ và tên:** Nguyễn Thiên Phước
+* **Mã sinh viên:** 2124110282
+* **Lớp học phần:** CCQ2411C
 * **Học kỳ:** Học kỳ 1 - Năm học 2026-2027
 
 ---
