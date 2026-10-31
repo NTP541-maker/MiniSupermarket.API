@@ -1,134 +1,293 @@
-ĐỒ ÁN MÔN HỌC: LẬP TRÌNH ỨNG DỤNG .NET CORE
+🛒 HỆ THỐNG QUẢN LÝ SIÊU THỊ MINI
+MINI SUPERMARKET SYSTEM
+Môn học: Lập trình Ứng dụng .NET Core
+Buổi thực hành: Buổi 2 - Xây dựng chức năng đăng nhập và phân quyền người dùng
 
-HỆ THỐNG QUẢN LÝ SIÊU THỊ MINI (MINISUPERMARKET SYSTEM)
+📌 1. Giới thiệu
+Ở Buổi 2, dự án MiniSupermarket được phát triển thêm chức năng:
 
-👤 THÔNG TIN SINH VIÊN
+Đăng nhập hệ thống.
+Xác thực tài khoản thông qua Web API.
+Sinh và lưu JWT Token.
+Phân quyền người dùng theo Role.
+Kết nối ứng dụng WinForms với Web API.
+Hiển thị giao diện quản lý phù hợp với quyền đăng nhập.
+Hệ thống tiếp tục sử dụng mô hình Client - Server:
 
-Họ và tên: Nguyễn Thiên Phước
+MiniSupermarket.API: Backend Web API.
+MiniSupermarket.WinForms: Ứng dụng Windows Forms Client.
+🏗️ 2. Mô hình kiến trúc
+                  CLIENT - SERVER
+                       │
+          ┌────────────┴────────────┐
+          │                         │
+          ▼                         ▼
+MiniSupermarket.WinForms     MiniSupermarket.API
+       (Client)                    (Server)
+          │                         │
+          │      HTTP Request       │
+          ├────────────────────────►│
+          │                         │
+          │      JSON Response      │
+          │◄────────────────────────┤
+          │                         │
+          ▼                         ▼
+      WinForms                 Controllers
+                                Models
+                                JWT
+                                Role
 
-Mã số sinh viên (MSSV): 2124110282
+🛠️ 3. Công nghệ sử dụng
+Backend
+C#
+ASP.NET Core Web API
+.NET 8.0
+Controllers
+JWT Authentication
+Role Authorization
+In-Memory Data
+LINQ
+Frontend
+C#
+Windows Forms
+.NET 8.0
+HttpClient
+System.Net.Http.Json
+System.Text.Json
+Công cụ
+Visual Studio 2022
+Swagger UI
+Git / GitHub
+📂 4. Cấu trúc Solution
+MiniSupermarketSystem/
+│
+├── MiniSupermarket.API/
+│   │
+│   ├── Controllers/
+│   │   ├── AuthController.cs
+│   │   ├── CategoriesController.cs
+│   │   └── RolesController.cs
+│   │
+│   ├── Models/
+│   │   ├── Category.cs
+│   │   └── Role.cs
+│   │
+│   ├── Program.cs
+│   └── appsettings.json
+│
+└── MiniSupermarket.WinForms/
+    │
+    ├── FormLogin.cs
+    ├── FormLogin.Designer.cs
+    ├── FormCategoryManagement.cs
+    ├── FormRoleManagement.cs
+    └── SessionManager.cs
+🔐 5. Chức năng đăng nhập
 
-Lớp: CCQ2411C
+Người dùng nhập:
 
-Tên môn học: Lập trình Ứng dụng .NET Core
+Tài khoản
+Mật khẩu
 
-Học kỳ/Năm học: HK2 - 2025/2026
+WinForms gửi thông tin đăng nhập đến Web API bằng phương thức:
 
-📌 TỔNG QUAN VỀ BÀI THỰC HÀNH BUỔI 2
+POST /api/auth/login
 
-Chủ đề: Bảo mật & Phân quyền JWT (JSON Web Token) cho Web API & Tích hợp WinForms Client.
+Dữ liệu gửi lên:
 
-🎯 Mục tiêu bài học
+{
+    "Username": "admin",
+    "Password": "123456"
+}
 
-Lý thuyết:
+Nếu đăng nhập thành công, API trả về:
 
-Nắm vững cơ chế Stateless Authentication (Xác thực không trạng thái) với JWT.
+{
+    "token": "...",
+    "role": "Admin"
+}
 
-Phân biệt rõ sự khác nhau giữa Authentication (Xác thực danh tính) và Authorization (Phân quyền truy cập).
+WinForms nhận dữ liệu và lưu:
 
-Ứng dụng Data Annotations & ModelState trong việc validate dữ liệu đầu vào tại Backend.
+SessionManager.JwtToken
+SessionManager.CurrentRole
+🔑 6. JWT Token
 
-Thực hành:
+Sau khi đăng nhập thành công, hệ thống nhận JWT Token từ Web API.
 
-Tích hợp AuthController cấp phát Token trong dự án ASP.NET Core Web API (MiniSupermarket.API).
+Token được lưu vào:
 
-Cấu hình phân quyền với các thuộc tính [Authorize] và [Authorize(Roles = "...")].
+SessionManager.JwtToken
 
-Cập nhật ứng dụng WinForms Client (MiniSupermarket.WinForms) với màn hình đăng nhập FormLogin, lưu trữ phiên qua SessionManager và đính kèm Bearer Token vào HTTP Header khi gọi API.
+Token được sử dụng để xác thực người dùng khi thực hiện các chức năng yêu cầu đăng nhập.
 
-🏗 KẾT CẤU DỰ ÁN (PROJECT STRUCTURE)
+👥 7. Phân quyền người dùng
 
-MiniSupermarket/ │ ├── MiniSupermarket.API/ # ASP.NET Core Web API (Backend) │ ├── Controllers/ │ │ ├── AuthController.cs # Controller cấp phát và kiểm tra JWT Token │ │ └── CategoriesController.cs # Controller quản lý danh mục (đã bảo vệ bằng [Authorize]) │ ├── Dtos/ # Data Transfer Objects │ ├── Program.cs # Cấu hình Services, JwtBearer Authentication & Middleware │ └── appsettings.json # Cấu hình Secret Key cho JWT │ └── MiniSupermarket.WinForms/ # Windows Forms App (Frontend Client) ├── FormLogin.cs # Giao diện và logic Đăng nhập ├── FormCategoryManagement.cs # Giao diện Quản lý danh mục sản phẩm ├── SessionManager.cs # Quản lý phiên làm việc tạm thời (Lưu JwtToken, CurrentRole) └── Program.cs # Điểm khởi chạy chính ứng dụng (chạy FormLogin đầu tiên)
+Hệ thống sử dụng Role để xác định quyền của người dùng.
 
-🔑 NỘI DUNG KỸ THUẬT NỔI BẬT
-
-Kiến trúc JWT Stateless Authentication
-Header: Chứa thuật toán mã hóa (HS256).
-
-Payload (Claims): Lưu thông tin định danh người dùng (Username, Role, thời hạn hết hạn).
-
-Signature: Khóa bí mật (SymmetricSecurityKey) dùng để ký và xác thực tính toàn vẹn của Token, chống giả mạo.
-
-Phân quyền Người dùng (Role-Based Access Control)
-Admin: Toàn quyền quản trị hệ thống, truy cập toàn bộ Endpoint (bao gồm cả /admin-dashboard).
-
-Cashier (Thu ngân): Chỉ truy cập được các chức năng hỗ trợ bán hàng, POS (Endpoint /staff-pos).
-
-🚀 HƯỚNG DẪN CÀI ĐẶT VÀ CHẠY ỨNG DỤNG
-
-🛠 Yêu cầu môi trường
-
-Visual Studio 2022 (hoặc mới hơn) hỗ trợ .NET 8.0 / .NET 10.0
-
-SDK .NET tương ứng
-
-Cài đặt các gói NuGet cần thiết (Backend)
-Mở dự án MiniSupermarket.API và cài đặt 2 gói thư viện sau:
-
-System.IdentityModel.Tokens.Jwt
-
-Microsoft.AspNetCore.Authentication.JwtBearer
-
-Lưu ý: Nếu gặp lỗi cache NuGet trong quá trình cài đặt, chạy lệnh sau trong Terminal/PowerShell:
-
-dotnet nuget locals all --clear
-
-Khởi chạy Web API (Backend)
-Đặt MiniSupermarket.API làm Startup Project.
-
-Nhấn F5 hoặc chọn Run.
-
-Swagger UI sẽ tự động khởi chạy tại địa chỉ dạng: https://localhost:7123/swagger
-
-Tài khoản kiểm thử mặc định (Demo Credentials)
-Tài khoản (Username)
-
-Mật khẩu (Password)
-
-Vai trò (Role)
-
-Quyền hạn
-
-admin
-
-123456
+Ví dụ:
 
 Admin
+User
 
-Quyền quản trị tối cao, gọi được tất cả API
+Sau khi đăng nhập, hệ thống lấy Role từ API:
 
-cashier
+SessionManager.CurrentRole
 
-123456
+Sau đó hiển thị thông báo:
 
-Cashier
+Đăng nhập thành công với quyền: Admin
+🖥️ 8. Giao diện WinForms
+FormLogin
 
-Quyền nhân viên thu ngân, bị giới hạn API Admin
+Form đăng nhập gồm:
 
-🧪 KỊCH BẢN KIỂM CHỨNG BẢO MẬT (TEST CASES)
+Ô nhập tài khoản.
+Ô nhập mật khẩu.
+Nút Đăng nhập.
 
-Test Case 1: Kiểm tra API khi chưa xác thực
+Khi nhấn nút Đăng nhập:
 
-Thao tác: Mở Swagger UI, gọi trực tiếp API GET /api/categories mà chưa thực hiện đăng nhập.
+FormLogin
+     │
+     ▼
+POST /api/auth/login
+     │
+     ▼
+Web API
+     │
+     ▼
+JWT Token + Role
+     │
+     ▼
+SessionManager
+FormCategoryManagement
 
-Kết quả: Trả về lỗi 401 Unauthorized.
+Chức năng quản lý danh mục:
 
-Test Case 2: Kiểm tra phân quyền Admin vs Cashier
+Hiển thị danh sách.
+Thêm danh mục.
+Sửa danh mục.
+Xóa danh mục.
+Tìm kiếm danh mục.
+FormRoleManagement
 
-Gọi API POST /api/auth/login với tài khoản cashier / 123456 để lấy token.
+Chức năng quản lý quyền:
 
-Copy Token thu được, dán vào nút Authorize ở góc trên Swagger theo định dạng: Bearer .
+Hiển thị danh sách Role.
+Thêm Role.
+Sửa Role.
+Xóa Role.
+🚀 9. Hướng dẫn chạy dự án
+Bước 1: Chạy Web API
 
-Gọi thử GET /api/categories/staff-pos ➔ Thành công (200 OK).
+Mở Solution bằng:
 
-Gọi thử GET /api/categories/admin-dashboard ➔ Bị từ chối (403 Forbidden) do tài khoản Cashier không đủ thẩm quyền.
+Visual Studio 2022
 
-🗺 ĐỊNH HƯỚNG PHÁT TRIỂN TIẾP THEO (BUỔI 3)
+Chọn project:
 
-Tích hợp SQL Server & Entity Framework Core (EF Core) vào dự án Backend.
+MiniSupermarket.API
 
-Chuyển đổi dữ liệu từ dạng In-Memory sang cơ sở dữ liệu quan hệ hoàn chỉnh (Code-First Migration).
+Chuột phải:
 
-Xây dựng các bảng dữ liệu cốt lõi: Users, Categories, Products, Customers, Orders, OrderDetails.
+Set as Startup Project
 
-Viết truy vấn LINQ nâng cao đảm bảo tính toàn vẹn dữ liệu (ACID) cho giao dịch bán hàng.
+Sau đó nhấn:
+
+F5
+
+Swagger UI sẽ được mở trên trình duyệt.
+
+Bước 2: Kiểm tra API đăng nhập
+
+Trong Swagger tìm:
+
+POST /api/auth/login
+
+Nhấn:
+
+Try it out
+
+Nhập tài khoản và mật khẩu.
+
+Sau đó nhấn:
+
+Execute
+
+Kiểm tra kết quả trả về gồm:
+
+token
+role
+Bước 3: Chạy WinForms
+
+Chọn project:
+
+MiniSupermarket.WinForms
+
+Chuột phải:
+
+Debug
+→ Start new instance
+
+Form Login sẽ xuất hiện.
+
+Nhập:
+
+Tài khoản
+Mật khẩu
+
+Sau đó nhấn:
+
+Đăng nhập hệ thống
+🧪 10. Kiểm thử
+
+Các chức năng được kiểm thử:
+
+STT	Chức năng	Kết quả
+1	Nhập tài khoản	Thành công
+2	Nhập mật khẩu	Thành công
+3	Đăng nhập đúng	Thành công
+4	Đăng nhập sai	Hiển thị thông báo lỗi
+5	Nhận JWT Token	Thành công
+6	Nhận Role	Thành công
+7	Mở Form quản lý	Thành công
+8	Quản lý danh mục	Thành công
+9	Quản lý Role	Thành công
+🌐 11. Kết nối API
+
+WinForms sử dụng HttpClient để kết nối Web API.
+
+Ví dụ:
+
+private static readonly HttpClient _client = new HttpClient
+{
+    BaseAddress = new Uri("https://localhost:7046/api/")
+};
+
+API Login:
+
+POST https://localhost:7046/api/auth/login
+📌 12. Kết quả đạt được
+
+Sau Buổi 2, hệ thống đã thực hiện được:
+
+Xây dựng giao diện đăng nhập.
+Kết nối WinForms với Web API.
+Gửi thông tin tài khoản đến API.
+Xác thực tài khoản.
+Nhận JWT Token.
+Lưu thông tin phiên đăng nhập.
+Nhận và lưu Role người dùng.
+Phát triển chức năng phân quyền.
+Kết nối các chức năng quản lý với hệ thống đăng nhập.
+👨‍💻 13. Thông tin sinh viên
+
+Họ tên: Nguyễn Thiên Phước
+
+Mã sinh viên: 2124110282
+
+Lớp học phần: CCQ2411C
+
+Buổi thực hành: Buổi 2
+Lớp học phần: CCQ2411C
